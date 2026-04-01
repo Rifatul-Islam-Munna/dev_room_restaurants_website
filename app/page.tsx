@@ -6,12 +6,8 @@ import { Clock, MapPin, Phone, ArrowRight } from "lucide-react";
 import DishCard from "@/components/custom/common/dish-card";
 import { useState } from "react";
 
-/* ── Images ─────────────────────────────────────────────── */
-
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1565895405137-3ca0cc5088c8?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-
-/* ── Data ────────────────────────────────────────────────── */
 
 const INFO_CARDS = [
   {

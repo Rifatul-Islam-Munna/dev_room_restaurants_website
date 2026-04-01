@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Search, ShoppingCart, ArrowRight } from "lucide-react";
 import DishCard from "@/components/custom/common/dish-card";
 
-/* ── Images ── */
 const IMG_A =
   "https://images.unsplash.com/photo-1565895405137-3ca0cc5088c8?q=80&w=600&auto=format&fit=crop";
 const IMG_B =
@@ -13,7 +12,6 @@ const IMG_B =
 const IMG_C =
   "https://images.unsplash.com/photo-1697350671122-4ffda28f5a85?q=80&w=600&auto=format&fit=crop";
 
-/* ── Data ── */
 type MenuItem = {
   id: number;
   name: string;
@@ -115,7 +113,6 @@ const CATEGORIES = ["All", "Starters", "Mains", "Pasta", "Grills", "Desserts"];
 
 type CartState = { count: number; total: number };
 
-/* ── Component ── */
 export default function MenuPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -140,12 +137,11 @@ export default function MenuPage() {
     }));
   };
 
-  // New handler — delta can be +1 or -1
   const handleCartChange = (name: string, delta: number, priceNum: number) => {
     setCart((prev) => {
       const newCount = prev.count + delta;
       const newTotal = prev.total + priceNum * delta;
-      // ✅ If everything removed, reset to zero cleanly
+
       return {
         count: Math.max(0, newCount),
         total: Math.max(0, newTotal),
@@ -154,7 +150,6 @@ export default function MenuPage() {
   };
 
   return (
-    // ✅ pb-32 on mobile leaves space for floating cart bar
     <main className="pt-20 pb-32 px-4 md:px-6 max-w-7xl mx-auto">
       {/* ── Header ── */}
       <header className="mb-8 md:mb-12">
