@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { loginUser } from "@/actions/auth";
 import { sileo } from "sileo";
 import { Spinner } from "@/components/ui/spinner";
+import { useRouter } from "next/navigation";
 
 interface SignInForm {
   email: string;
@@ -17,6 +18,7 @@ interface SignInForm {
 const RESTAURANT_IMAGE =
   "https://images.unsplash.com/photo-1659626890153-7421275f4b74?q=80&w=729&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 export default function SignInPage() {
+  const router = useRouter();
   const { mutate, isPending } = useMutation({
     mutationKey: ["sign-in"],
     mutationFn: () => loginUser(form.email, form.password),
@@ -28,6 +30,7 @@ export default function SignInPage() {
           duration: 2000,
           fill: "#e6f4f3",
         });
+        router.push("/admin");
         return;
       }
       sileo.error({

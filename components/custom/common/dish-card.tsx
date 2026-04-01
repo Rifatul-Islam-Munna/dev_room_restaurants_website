@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { sileo } from "sileo";
+import { useCartStore } from "@/store/use-cart-store";
 
 export interface DishCardProps {
+  id: string;
   name: string;
   subtitle: string;
   price: string;
@@ -13,13 +14,13 @@ export interface DishCardProps {
   image?: string;
   chefsPick?: boolean;
   category?: string;
-  onCartChange?: (name: string, delta: number, priceNum: number) => void;
 }
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=600&auto=format&fit=crop";
 
 export default function DishCard({
+  id,
   name,
   subtitle,
   price,
@@ -27,42 +28,43 @@ export default function DishCard({
   image = DEFAULT_IMAGE,
   chefsPick = false,
   category,
-  onCartChange,
 }: DishCardProps) {
-  const [qty, setQty] = useState(0);
+  const qty = useCartStore((state) => state.getItemQty(id));
+  const addToCart = useCartStore((state) => state.addToCart);
+  const increaseQty = useCartStore((state) => state.increaseQty);
+  const decreaseQty = useCartStore((state) => state.decreaseQty);
 
-  // First click — adds 1, fires toast once
   const handleInitialAdd = () => {
-    setQty(1);
-    onCartChange?.(name, +1, priceNum); // ← +1
+    addToCart({
+      id,
+      name,
+      subtitle,
+      price,
+      priceNum,
+      image,
+      chefsPick,
+      category,
+      quantity: 1,
+    });
+
     sileo.success({
       title: `${name} added to cart`,
-      description: `1 × ${price}`,
+
       duration: 2000,
       fill: "#e6f4f3",
     });
   };
 
-  // + adds 1 more silently
   const handlePlus = () => {
-    setQty((q) => q + 1);
-    onCartChange?.(name, +1, priceNum); // ← +1
+    increaseQty(id);
   };
 
-  // − removes 1; at 0 collapses back to button
   const handleMinus = () => {
-    if (qty <= 1) {
-      setQty(0);
-      onCartChange?.(name, -1, priceNum); // ← -1 tells parent to subtract
-    } else {
-      setQty((q) => q - 1);
-      onCartChange?.(name, -1, priceNum); // ← -1
-    }
+    decreaseQty(id);
   };
 
   return (
     <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900">
-      {/* Square image */}
       <div className="relative aspect-square w-full">
         <Image
           src={image}
@@ -74,8 +76,8 @@ export default function DishCard({
         {category && (
           <span
             className="absolute top-3 right-3 bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm
-                           text-[#01696f] text-[10px] font-bold uppercase tracking-widest
-                           px-2.5 py-1 rounded-full"
+                       text-[#01696f] text-[10px] font-bold uppercase tracking-widest
+                       px-2.5 py-1 rounded-full"
           >
             {category}
           </span>
@@ -83,17 +85,15 @@ export default function DishCard({
         {chefsPick && (
           <span
             className="absolute top-3 left-3 bg-[#01696f] text-white
-                           text-[10px] font-bold uppercase tracking-widest
-                           px-2.5 py-1 rounded-full"
+                       text-[10px] font-bold uppercase tracking-widest
+                       px-2.5 py-1 rounded-full"
           >
             Chef&apos;s Pick
           </span>
         )}
       </div>
 
-      {/* Content */}
       <div className="px-3 py-3 flex flex-col gap-2">
-        {/* Name + price */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-serif text-sm font-semibold text-stone-800 dark:text-stone-100 leading-tight truncate">
@@ -108,7 +108,6 @@ export default function DishCard({
           </span>
         </div>
 
-        {/* Controls */}
         <div className="pt-1 border-t border-stone-100 dark:border-stone-800">
           {qty === 0 ? (
             <button

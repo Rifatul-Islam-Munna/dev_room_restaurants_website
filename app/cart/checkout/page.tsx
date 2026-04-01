@@ -6,40 +6,12 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronDown,
   Banknote,
   CheckCircle2,
   Package,
   Clock,
 } from "lucide-react";
-
-/* ── Order items (Unsplash only) ── */
-const ORDER_ITEMS = [
-  {
-    id: 1,
-    name: "Wild Atlantic Poke Bowl",
-    qty: 1,
-    price: 1250,
-    image:
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    name: "Truffle Tagliatelle",
-    qty: 2,
-    price: 2100,
-    image:
-      "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?q=80&w=200&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    name: "Single Origin Espresso",
-    qty: 1,
-    price: 350,
-    image:
-      "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=200&auto=format&fit=crop",
-  },
-];
+import { useCartStore } from "@/store/use-cart-store";
 
 const DELIVERY = 50;
 const TAX_RATE = 0.05;
@@ -66,9 +38,10 @@ export default function CheckoutPage() {
     postal: "",
     notes: "",
   });
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderId] = useState(`ORD-${Date?.now().toString().slice(-8)}`);
+  const [orderId] = useState(`ORD-${Date.now().toString().slice(-8)}`);
+
+  const items = useCartStore((state) => state.items);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -76,23 +49,22 @@ export default function CheckoutPage() {
     >,
   ) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const subtotal = ORDER_ITEMS.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotal = items.reduce((s, i) => s + i.priceNum * i.quantity, 0);
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + tax + DELIVERY;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // send form + items if needed
     setOrderPlaced(true);
   };
 
-  /* ── Step badge ── */
   const Step = ({ n }: { n: number }) => (
     <span className="w-7 h-7 rounded-full bg-[#01696f] text-white flex items-center justify-center text-xs font-bold shrink-0">
       {n}
     </span>
   );
 
-  /* ── Input ── */
   const Input = ({
     label,
     name,
@@ -126,16 +98,49 @@ export default function CheckoutPage() {
     </div>
   );
 
-  /* ── Success modal ── */
+  if (items.length === 0 && !orderPlaced) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+        <h2 className="font-serif text-3xl text-[#01696f] dark:text-teal-400 mb-3">
+          No items to checkout
+        </h2>
+        <p className="text-stone-400 dark:text-stone-500 mb-6 text-sm max-w-sm">
+          Please add some dishes to your cart before proceeding to checkout.
+        </p>
+        <div className="flex gap-3">
+          <Link
+            href="/cart"
+            className="flex items-center gap-2 text-sm text-[#01696f] dark:text-teal-400
+                       font-medium hover:underline group"
+          >
+            <ArrowLeft
+              size={14}
+              className="group-hover:-translate-x-1 transition-transform"
+            />
+            Back to Cart
+          </Link>
+          <Link
+            href="/menu"
+            className="flex items-center gap-2 bg-[#01696f] text-white px-6 py-2 rounded-full
+                       text-sm font-semibold uppercase tracking-widest
+                       hover:bg-[#014d52] active:scale-95 transition-all"
+          >
+            Browse Menu
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   if (orderPlaced) {
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center
-                      bg-[#01696f]/10 backdrop-blur-md px-4"
+                   bg-[#01696f]/10 backdrop-blur-md px-4"
       >
         <div
           className="bg-white dark:bg-stone-900 max-w-md w-full rounded-3xl p-8 text-center
-                        border border-stone-200 dark:border-stone-700"
+                     border border-stone-200 dark:border-stone-700"
         >
           <div className="w-20 h-20 rounded-full bg-[#01696f] flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={36} className="text-white" />
@@ -170,9 +175,9 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-3">
             <button
               className="w-full flex items-center justify-center gap-2
-                               bg-[#01696f] text-white py-3.5 rounded-full
-                               font-semibold text-sm uppercase tracking-widest
-                               hover:bg-[#014d52] active:scale-95 transition-all"
+                         bg-[#01696f] text-white py-3.5 rounded-full
+                         font-semibold text-sm uppercase tracking-widest
+                         hover:bg-[#014d52] active:scale-95 transition-all"
             >
               <Package size={15} />
               Track Order
@@ -190,10 +195,9 @@ export default function CheckoutPage() {
     );
   }
 
-  /* ── Main page ── */
   return (
     <main className="pt-24 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-      {/* ── Header ── */}
+      {/* Header */}
       <header className="mb-10">
         <h1 className="font-serif italic text-4xl md:text-6xl text-[#01696f] dark:text-teal-400 font-light mb-2">
           Securing Your Table
@@ -205,7 +209,7 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 items-start">
-          {/* ── LEFT: Form ── */}
+          {/* LEFT: Form */}
           <div className="space-y-6">
             {/* 1. Contact */}
             <section className="border border-stone-200 dark:border-stone-800 rounded-xl p-6 bg-white dark:bg-stone-900">
@@ -253,31 +257,11 @@ export default function CheckoutPage() {
                   colSpan
                 />
                 <Input label="Area" name="area" placeholder="Gulshan 2" />
-
-                {/* City select */}
-                <div className="space-y-1.5">
-                  <label className="block text-[10px] uppercase tracking-widest font-semibold text-stone-400">
-                    City
-                  </label>
-                  <select
-                    name="city"
-                    value={form.city}
-                    onChange={handleChange}
-                    className="w-full bg-stone-100 dark:bg-stone-800 rounded-lg px-4 py-3
-                               text-sm text-stone-700 dark:text-stone-200
-                               border border-transparent appearance-none
-                               focus:outline-none focus:ring-2 focus:ring-[#01696f]/20 transition-all"
-                  >
-                    <option>Dhaka</option>
-                    <option>Chittagong</option>
-                    <option>Sylhet</option>
-                    <option>Khulna</option>
-                  </select>
-                </div>
-
+                {/* City now text input */}
+                <Input label="City" name="city" placeholder="Dhaka" />
                 <Input label="Postal Code" name="postal" placeholder="1212" />
 
-                {/* Textarea */}
+                {/* Notes */}
                 <div className="md:col-span-2 space-y-1.5">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-stone-400">
                     Delivery Notes (Optional)
@@ -298,71 +282,18 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* 3. Order summary — accordion */}
-            <section className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900">
-              <button
-                type="button"
-                onClick={() => setSummaryOpen((v) => !v)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <Step n={3} />
-                  <h2 className="font-serif text-xl text-stone-800 dark:text-stone-100">
-                    Order Summary
-                  </h2>
-                  <span className="text-xs text-stone-400 ml-1">
-                    ({ORDER_ITEMS.length} items)
-                  </span>
-                </div>
-                <ChevronDown
-                  size={16}
-                  className={`text-[#01696f] transition-transform duration-300
-                    ${summaryOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {summaryOpen && (
-                <div className="px-6 pb-6 border-t border-stone-100 dark:border-stone-800 pt-4 space-y-4">
-                  {ORDER_ITEMS.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4">
-                      <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 dark:bg-stone-800">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-stone-400">
-                          Qty: {item.qty}
-                        </p>
-                      </div>
-                      <span className="text-sm font-bold text-[#01696f] dark:text-teal-400 tabular-nums shrink-0">
-                        ৳{(item.price * item.qty).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
             {/* 4. Payment */}
             <section className="border border-stone-200 dark:border-stone-800 rounded-xl p-6 bg-white dark:bg-stone-900">
               <div className="flex items-center gap-3 mb-6">
-                <Step n={4} />
+                <Step n={3} />
                 <h2 className="font-serif text-xl text-stone-800 dark:text-stone-100">
                   Payment Method
                 </h2>
               </div>
               <label
                 className="flex items-start gap-4 p-4 bg-stone-50 dark:bg-stone-800
-                                 rounded-xl cursor-pointer border border-stone-200 dark:border-stone-700
-                                 hover:border-[#01696f]/30 transition-colors"
+                           rounded-xl cursor-pointer border border-stone-200 dark:border-stone-700
+                           hover:border-[#01696f]/30 transition-colors"
               >
                 <input
                   type="radio"
@@ -383,7 +314,7 @@ export default function CheckoutPage() {
               </label>
             </section>
 
-            {/* Back link — mobile only */}
+            {/* Back link — mobile */}
             <div className="lg:hidden">
               <Link
                 href="/cart"
@@ -399,11 +330,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* ── RIGHT: Sticky summary ── */}
+          {/* RIGHT: Sticky summary */}
           <aside className="lg:sticky lg:top-28">
             <div
               className="border border-stone-200 dark:border-stone-800 rounded-2xl p-6
-                            bg-white dark:bg-stone-900"
+                         bg-white dark:bg-stone-900"
             >
               <h3 className="font-serif italic text-xl text-[#01696f] dark:text-teal-400 mb-5">
                 Your Selection
@@ -411,11 +342,11 @@ export default function CheckoutPage() {
 
               {/* Mini item list */}
               <div className="space-y-4 mb-5">
-                {ORDER_ITEMS.map((item) => (
+                {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-stone-100 dark:bg-stone-800">
                       <Image
-                        src={item.image}
+                        src={item.image ?? ""}
                         alt={item.name}
                         fill
                         sizes="48px"
@@ -427,11 +358,11 @@ export default function CheckoutPage() {
                         {item.name}
                       </p>
                       <p className="text-[11px] text-stone-400">
-                        Qty: {item.qty}
+                        Qty: {item.quantity}
                       </p>
                     </div>
                     <span className="text-xs font-bold text-[#01696f] dark:text-teal-400 tabular-nums shrink-0">
-                      ৳{(item.price * item.qty).toLocaleString()}
+                      ৳{(item.priceNum * item.quantity).toLocaleString()}
                     </span>
                   </div>
                 ))}

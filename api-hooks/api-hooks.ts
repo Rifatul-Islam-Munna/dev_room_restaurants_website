@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation'
 
 export const getToken = async ()=>{
     const access_token = (await cookies()).get("access_token")?.value
-  
+    console.log("access-token",access_token)
     return {access_token}
 }
 
