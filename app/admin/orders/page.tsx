@@ -1,29 +1,94 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Eye, X, Search, ChevronDown } from "lucide-react";
+import {
+  Eye,
+  X,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useQueryWrapper } from "@/api-hooks/react-query-wrapper";
+import { useCommonMutationApi } from "@/api-hooks/use-api-mutation";
+import { useQueryClient } from "@tanstack/react-query";
 
-type OrderStatus = "Preparing" | "Serving" | "Completed";
+type OrderStatus = "Pending" | "Preparing" | "Serving" | "Completed";
+type PaymentMethod = "Cash on Delivery" | "Card" | "Online";
+type PaymentStatus = "pending" | "paid" | "failed";
+type DeliveryType = "delivery" | "takeout" | "table";
 
-type OrderItem = { name: string; qty: number; price: number };
+type OrderItem = {
+  menuItemId: string;
+  name: string;
+  subtitle?: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  category?: string;
+};
 
 type Order = {
+  _id: string;
   id: string;
-  customer: string;
-  email: string;
-  location: string;
-  time: string;
-  date: string;
+  orderNumber: string;
+  customer: {
+    userId?: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  delivery: {
+    street: string;
+    area: string;
+    city: string;
+    postalCode: string;
+    notes?: string;
+    type: DeliveryType;
+    tableNumber?: string;
+  };
   items: OrderItem[];
-  total: number;
+  itemCount: number;
+  pricing: {
+    subtotal: number;
+    taxRate: number;
+    taxAmount: number;
+    deliveryFee: number;
+    total: number;
+  };
   status: OrderStatus;
+  estimatedDeliveryTime?: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
   notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Pagination = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+type OrdersResponse = {
+  success: boolean;
+  data: Order[];
+  pagination: Pagination;
 };
 
 const STATUS_CONFIG: Record<
   OrderStatus,
   { bg: string; text: string; dot: string }
 > = {
+  Pending: {
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    text: "text-blue-600 dark:text-blue-400",
+    dot: "bg-blue-400",
+  },
   Preparing: {
     bg: "bg-amber-50 dark:bg-amber-900/20",
     text: "text-amber-700 dark:text-amber-400",
@@ -41,140 +106,126 @@ const STATUS_CONFIG: Record<
   },
 };
 
-const ALL_STATUSES: OrderStatus[] = ["Preparing", "Serving", "Completed"];
+const PAYMENT_STATUS_CONFIG: Record<
+  PaymentStatus,
+  { bg: string; text: string }
+> = {
+  pending: {
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    text: "text-amber-600 dark:text-amber-400",
+  },
+  paid: {
+    bg: "bg-teal-50 dark:bg-teal-900/20",
+    text: "text-[#01696f] dark:text-teal-400",
+  },
+  failed: {
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-500 dark:text-red-400",
+  },
+};
 
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: "#SR-4921",
-    customer: "Elena Richardson",
-    email: "elena@example.com",
-    location: "Table 12",
-    time: "7:15 PM",
-    date: "Mar 31, 2026",
-    items: [
-      { name: "Duck Confit", qty: 2, price: 4800 },
-      { name: "Pinot Noir", qty: 1, price: 2650 },
-    ],
-    total: 12250,
-    status: "Serving",
-  },
-  {
-    id: "#SR-4922",
-    customer: "Marcus Vane",
-    email: "marcus@example.com",
-    location: "Table 04",
-    time: "7:30 PM",
-    date: "Mar 31, 2026",
-    items: [
-      { name: "Oysters", qty: 12, price: 15600 },
-      { name: "Champagne", qty: 1, price: 2500 },
-    ],
-    total: 18100,
-    status: "Preparing",
-  },
-  {
-    id: "#SR-4923",
-    customer: "Sarah Jenkins",
-    email: "sarah@example.com",
-    location: "Takeout",
-    time: "7:45 PM",
-    date: "Mar 31, 2026",
-    items: [{ name: "Wild Mushroom Risotto", qty: 1, price: 2900 }],
-    total: 2900,
-    status: "Completed",
-    notes: "No onions please.",
-  },
-  {
-    id: "#SR-4924",
-    customer: "David Osei",
-    email: "david@example.com",
-    location: "Table 07",
-    time: "8:00 PM",
-    date: "Mar 31, 2026",
-    items: [
-      { name: "Truffle Tagliatelle", qty: 2, price: 4200 },
-      { name: "Espresso", qty: 2, price: 700 },
-    ],
-    total: 9400,
-    status: "Preparing",
-  },
-  {
-    id: "#SR-4925",
-    customer: "Priya Nair",
-    email: "priya@example.com",
-    location: "Table 01",
-    time: "8:15 PM",
-    date: "Mar 31, 2026",
-    items: [
-      { name: "Poke Bowl", qty: 1, price: 1250 },
-      { name: "Green Tea", qty: 2, price: 600 },
-    ],
-    total: 3600,
-    status: "Serving",
-  },
-  {
-    id: "#SR-4926",
-    customer: "Tom Baxter",
-    email: "tom@example.com",
-    location: "Table 09",
-    time: "8:30 PM",
-    date: "Mar 31, 2026",
-    items: [
-      { name: "Obsidian Soufflé", qty: 2, price: 3200 },
-      { name: "Latte", qty: 2, price: 700 },
-    ],
-    total: 5600,
-    status: "Completed",
-  },
-  {
-    id: "#SR-4927",
-    customer: "Amara Diallo",
-    email: "amara@example.com",
-    location: "Takeout",
-    time: "8:45 PM",
-    date: "Mar 31, 2026",
-    items: [{ name: "Truffle Tagliatelle", qty: 1, price: 2100 }],
-    total: 2100,
-    status: "Preparing",
-  },
+const ALL_STATUSES: OrderStatus[] = [
+  "Pending",
+  "Preparing",
+  "Serving",
+  "Completed",
 ];
 
 type FilterTab = "All" | OrderStatus;
+const TABS: FilterTab[] = [
+  "All",
+  "Pending",
+  "Preparing",
+  "Serving",
+  "Completed",
+];
+
+const LIMIT = 10;
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Order | null>(null);
+  const queryClient = useQueryClient();
 
-  const updateStatus = (id: string, status: OrderStatus) =>
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+  const query = new URLSearchParams();
+  if (activeTab !== "All") query.set("status", activeTab);
+  if (search.trim()) query.set("search", search.trim());
+  query.set("page", String(page));
+  query.set("limit", String(LIMIT));
 
-  const filtered = useMemo(() => {
-    return orders.filter((o) => {
-      const matchTab = activeTab === "All" || o.status === activeTab;
-      const matchSearch =
-        o.customer.toLowerCase().includes(search.toLowerCase()) ||
-        o.id.toLowerCase().includes(search.toLowerCase());
-      return matchTab && matchSearch;
-    });
-  }, [orders, activeTab, search]);
-
-  const counts = useMemo(
-    () => ({
-      All: orders.length,
-      Preparing: orders.filter((o) => o.status === "Preparing").length,
-      Serving: orders.filter((o) => o.status === "Serving").length,
-      Completed: orders.filter((o) => o.status === "Completed").length,
-    }),
-    [orders],
+  const { data: res, isLoading } = useQueryWrapper<OrdersResponse>(
+    ["orders", activeTab, search, page],
+    `/order?${query.toString()}`,
   );
 
-  const TABS: FilterTab[] = ["All", "Preparing", "Serving", "Completed"];
+  const { mutate: patchStatus } = useCommonMutationApi({
+    method: "PATCH",
+    url: `/order`,
+  });
+
+  const orders: Order[] = res?.data ?? [];
+  const pagination: Pagination | undefined = res?.pagination;
+
+  const counts = useMemo(() => {
+    const all: Record<FilterTab, number> = {
+      All: pagination?.total ?? 0,
+      Pending: 0,
+      Preparing: 0,
+      Serving: 0,
+      Completed: 0,
+    };
+    // count from currently loaded data as approximation
+    orders.forEach((o) => {
+      if (o.status in all) all[o.status as FilterTab]++;
+    });
+    return all;
+  }, [orders, pagination]);
+
+  const handleTabChange = (tab: FilterTab) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleStatusChange = (orderId: string, status: OrderStatus) => {
+    patchStatus(
+      { status, id: orderId },
+      {
+        onSuccess: () => {
+          // optimistically update selected panel if open
+          if (selected && selected.id === orderId) {
+            setSelected({ ...selected, status });
+          }
+          queryClient.refetchQueries({ queryKey: ["orders"], exact: false });
+        },
+      },
+    );
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (!pagination) return;
+    if (newPage < 1 || newPage > pagination.totalPages) return;
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getVisiblePages = () => {
+    if (!pagination) return [];
+    const pages: number[] = [];
+    const start = Math.max(1, pagination.page - 1);
+    const end = Math.min(pagination.totalPages, pagination.page + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* ── Header ── */}
       <div>
         <h1 className="font-serif italic text-3xl text-stone-800 dark:text-stone-100">
           Orders
@@ -184,42 +235,45 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      {/* ── Filter tabs + search ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex gap-1 bg-stone-100 dark:bg-stone-800 rounded-xl p-1">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
-                ${
-                  activeTab === tab
-                    ? "bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100"
-                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-                }`}
-            >
-              {tab}
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
-                ${
-                  activeTab === tab
-                    ? tab === "Preparing"
-                      ? "bg-amber-100 text-amber-700"
-                      : tab === "Serving"
-                        ? "bg-teal-100 text-[#01696f]"
-                        : tab === "Completed"
-                          ? "bg-stone-100 text-stone-500"
-                          : "bg-stone-100 text-stone-500"
-                    : "bg-stone-200 dark:bg-stone-700 text-stone-500"
-                }`}
+        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex gap-1 bg-stone-100 dark:bg-stone-800 rounded-xl p-1 w-max min-w-full">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap
+                  ${
+                    activeTab === tab
+                      ? "bg-white dark:bg-stone-900 text-stone-800 dark:text-stone-100 shadow-sm"
+                      : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                  }`}
               >
-                {counts[tab]}
-              </span>
-            </button>
-          ))}
+                {tab}
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                    ${
+                      activeTab === tab
+                        ? tab === "Pending"
+                          ? "bg-blue-100 text-blue-600"
+                          : tab === "Preparing"
+                            ? "bg-amber-100 text-amber-700"
+                            : tab === "Serving"
+                              ? "bg-teal-100 text-[#01696f]"
+                              : tab === "Completed"
+                                ? "bg-stone-100 text-stone-500"
+                                : "bg-stone-100 text-stone-500"
+                        : "bg-stone-200 dark:bg-stone-700 text-stone-500"
+                    }`}
+                >
+                  {tab === "All" ? (pagination?.total ?? 0) : counts[tab]}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <Search
             size={13}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
@@ -228,7 +282,7 @@ export default function OrdersPage() {
             type="text"
             placeholder="Search customer or ID..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearch}
             className="pl-9 pr-4 py-2 text-sm bg-white dark:bg-stone-900
                        border border-stone-200 dark:border-stone-700 rounded-xl w-64
                        text-stone-700 dark:text-stone-200
@@ -238,67 +292,113 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* ── Table ── */}
       <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
             <thead>
               <tr className="bg-stone-50 dark:bg-stone-800/60 border-b border-stone-200 dark:border-stone-800">
-                {["Order ID", "Customer", "Items", "Total", "Status", ""].map(
-                  (th) => (
-                    <th
-                      key={th}
-                      className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-stone-400 whitespace-nowrap"
-                    >
-                      {th}
-                    </th>
-                  ),
-                )}
+                {[
+                  "Order",
+                  "Customer",
+                  "Delivery",
+                  "Items",
+                  "Total",
+                  "Payment",
+                  "Status",
+                  "",
+                ].map((th) => (
+                  <th
+                    key={th}
+                    className="px-5 py-3 text-[10px] uppercase tracking-widest font-bold text-stone-400 whitespace-nowrap"
+                  >
+                    {th}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {filtered.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: LIMIT }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 8 }).map((__, j) => (
+                      <td key={j} className="px-5 py-4">
+                        <div className="h-4 rounded bg-stone-100 dark:bg-stone-800 animate-pulse w-20" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-5 py-16 text-center text-sm text-stone-400 italic"
                   >
                     No orders found.
                   </td>
                 </tr>
               ) : (
-                filtered.map((order) => {
+                orders.map((order) => {
                   const s = STATUS_CONFIG[order.status];
+                  const ps = PAYMENT_STATUS_CONFIG[order.paymentStatus];
                   return (
                     <tr
-                      key={order.id}
+                      key={order._id}
                       className="hover:bg-stone-50 dark:hover:bg-stone-800/40 transition-colors"
                     >
                       <td className="px-5 py-4">
-                        <span className="font-mono text-xs text-[#01696f] dark:text-teal-400 font-semibold">
+                        <span className="font-mono text-xs text-[#01696f] dark:text-teal-400 font-semibold block">
+                          {order.orderNumber}
+                        </span>
+                        <span className="font-mono text-[10px] text-stone-400">
                           {order.id}
                         </span>
                       </td>
+
                       <td className="px-5 py-4">
                         <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">
-                          {order.customer}
+                          {order.customer.name}
                         </p>
                         <p className="text-[10px] text-stone-400 mt-0.5">
-                          {order.location} · {order.time}
+                          {order.customer.phone}
                         </p>
                       </td>
-                      <td className="px-5 py-4 max-w-[200px]">
+
+                      <td className="px-5 py-4">
+                        <p className="text-xs text-stone-600 dark:text-stone-300 capitalize">
+                          {order.delivery.type}
+                        </p>
+                        <p className="text-[10px] text-stone-400 mt-0.5 max-w-[120px] truncate">
+                          {order.delivery.area}, {order.delivery.city}
+                        </p>
+                      </td>
+
+                      <td className="px-5 py-4 max-w-[160px]">
                         <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
                           {order.items
-                            .map((i) => `${i.name} ×${i.qty}`)
+                            .map((i) => `${i.name} ×${i.quantity}`)
                             .join(", ")}
                         </p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">
+                          {order.itemCount} item
+                          {order.itemCount !== 1 ? "s" : ""}
+                        </p>
                       </td>
+
                       <td className="px-5 py-4">
                         <span className="font-serif text-sm font-semibold text-stone-700 dark:text-stone-200 tabular-nums">
-                          ৳{order.total.toLocaleString()}
+                          ৳{order.pricing.total.toLocaleString()}
                         </span>
                       </td>
+
+                      {/* Payment status */}
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${ps.bg} ${ps.text}`}
+                        >
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+
                       <td className="px-5 py-4">
                         <div
                           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${s.bg}`}
@@ -310,7 +410,7 @@ export default function OrdersPage() {
                             <select
                               value={order.status}
                               onChange={(e) =>
-                                updateStatus(
+                                handleStatusChange(
                                   order.id,
                                   e.target.value as OrderStatus,
                                 )
@@ -331,6 +431,7 @@ export default function OrdersPage() {
                           </div>
                         </div>
                       </td>
+
                       <td className="px-5 py-4">
                         <button
                           onClick={() => setSelected(order)}
@@ -351,27 +452,88 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* ── Order detail slide panel ── */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-stone-400">
+            Showing{" "}
+            <span className="font-semibold text-stone-600 dark:text-stone-300">
+              {(pagination.page - 1) * pagination.limit + 1}–
+              {Math.min(pagination.page * pagination.limit, pagination.total)}
+            </span>{" "}
+            of{" "}
+            <span className="font-semibold text-stone-600 dark:text-stone-300">
+              {pagination.total}
+            </span>{" "}
+            orders
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={!pagination.hasPrevPage}
+              className="h-8 w-8 flex items-center justify-center rounded-lg
+                         border border-stone-200 dark:border-stone-700
+                         text-stone-500 dark:text-stone-400
+                         hover:bg-stone-100 dark:hover:bg-stone-800
+                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={14} />
+            </button>
+
+            {getVisiblePages().map((p) => (
+              <button
+                key={p}
+                onClick={() => handlePageChange(p)}
+                className={`h-8 min-w-8 px-2.5 rounded-lg text-xs font-semibold transition-colors
+                  ${
+                    pagination.page === p
+                      ? "bg-[#01696f] text-white"
+                      : "border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
+                  }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={!pagination.hasNextPage}
+              className="h-8 w-8 flex items-center justify-center rounded-lg
+                         border border-stone-200 dark:border-stone-700
+                         text-stone-500 dark:text-stone-400
+                         hover:bg-stone-100 dark:hover:bg-stone-800
+                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {selected && (
         <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
           <div
             className="flex-1 bg-stone-900/30 dark:bg-stone-900/60 backdrop-blur-sm"
             onClick={() => setSelected(null)}
           />
-          {/* Panel */}
           <div
             className="w-full max-w-md bg-white dark:bg-stone-900 h-full flex flex-col
-                          border-l border-stone-200 dark:border-stone-800 overflow-y-auto"
+                        border-l border-stone-200 dark:border-stone-800 overflow-y-auto"
           >
-            {/* Header */}
+            {/* Panel header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-stone-800 sticky top-0 bg-white dark:bg-stone-900 z-10">
               <div>
                 <p className="font-mono text-sm text-[#01696f] dark:text-teal-400 font-bold">
-                  {selected.id}
+                  {selected.orderNumber}
                 </p>
                 <p className="text-[10px] text-stone-400 mt-0.5">
-                  {selected.date} · {selected.time}
+                  {new Date(selected.createdAt).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
               <button
@@ -390,10 +552,36 @@ export default function OrdersPage() {
                   Customer
                 </p>
                 <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">
-                  {selected.customer}
+                  {selected.customer.name}
                 </p>
-                <p className="text-xs text-stone-400">{selected.email}</p>
-                <p className="text-xs text-stone-400">{selected.location}</p>
+                <p className="text-xs text-stone-400">
+                  {selected.customer.email}
+                </p>
+                <p className="text-xs text-stone-400">
+                  {selected.customer.phone}
+                </p>
+              </div>
+
+              {/* Delivery */}
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">
+                  Delivery
+                </p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 capitalize">
+                  {selected.delivery.type}
+                  {selected.delivery.tableNumber
+                    ? ` · Table ${selected.delivery.tableNumber}`
+                    : ""}
+                </p>
+                <p className="text-xs text-stone-400">
+                  {selected.delivery.street}, {selected.delivery.area},{" "}
+                  {selected.delivery.city} - {selected.delivery.postalCode}
+                </p>
+                {selected.delivery.notes && (
+                  <p className="text-xs text-stone-400 italic">
+                    Note: {selected.delivery.notes}
+                  </p>
+                )}
               </div>
 
               {/* Items */}
@@ -412,22 +600,64 @@ export default function OrdersPage() {
                           {item.name}
                         </p>
                         <p className="text-[10px] text-stone-400">
-                          ×{item.qty}
+                          ×{item.quantity}
+                          {item.category ? ` · ${item.category}` : ""}
                         </p>
                       </div>
                       <span className="text-sm font-semibold tabular-nums text-stone-700 dark:text-stone-200">
-                        ৳{item.price.toLocaleString()}
+                        ৳{(item.price * item.quantity).toLocaleString()}
                       </span>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center px-4 py-3 bg-stone-50 dark:bg-stone-800/50">
-                    <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
-                      Total
-                    </p>
-                    <span className="font-serif text-lg font-bold text-[#01696f] dark:text-teal-400 tabular-nums">
-                      ৳{selected.total.toLocaleString()}
-                    </span>
+
+                  {/* Pricing breakdown */}
+                  <div className="px-4 py-3 bg-stone-50 dark:bg-stone-800/50 space-y-1.5">
+                    <div className="flex justify-between text-xs text-stone-400">
+                      <span>Subtotal</span>
+                      <span>৳{selected.pricing.subtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-stone-400">
+                      <span>Delivery Fee</span>
+                      <span>
+                        ৳{selected.pricing.deliveryFee.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-stone-400">
+                      <span>
+                        Tax ({(selected.pricing.taxRate * 100).toFixed(0)}%)
+                      </span>
+                      <span>
+                        ৳{selected.pricing.taxAmount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-stone-200 dark:border-stone-700">
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
+                        Total
+                      </p>
+                      <span className="font-serif text-lg font-bold text-[#01696f] dark:text-teal-400 tabular-nums">
+                        ৳{selected.pricing.total.toLocaleString()}
+                      </span>
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Payment */}
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">
+                  Payment
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    {selected.paymentMethod}
+                  </p>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+                      ${PAYMENT_STATUS_CONFIG[selected.paymentStatus].bg}
+                      ${PAYMENT_STATUS_CONFIG[selected.paymentStatus].text}`}
+                  >
+                    {selected.paymentStatus}
+                  </span>
                 </div>
               </div>
 
@@ -448,7 +678,7 @@ export default function OrdersPage() {
                 <p className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">
                   Update Status
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {ALL_STATUSES.map((st) => {
                     const cfg = STATUS_CONFIG[st];
                     const isActive = selected.status === st;
@@ -456,7 +686,7 @@ export default function OrdersPage() {
                       <button
                         key={st}
                         onClick={() => {
-                          updateStatus(selected.id, st);
+                          handleStatusChange(selected.id, st);
                           setSelected({ ...selected, status: st });
                         }}
                         className={`py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors
@@ -472,6 +702,13 @@ export default function OrdersPage() {
                   })}
                 </div>
               </div>
+
+              {/* Estimated delivery */}
+              {selected.estimatedDeliveryTime && (
+                <p className="text-xs text-stone-400 text-center italic">
+                  Estimated delivery: {selected.estimatedDeliveryTime}
+                </p>
+              )}
             </div>
           </div>
         </div>

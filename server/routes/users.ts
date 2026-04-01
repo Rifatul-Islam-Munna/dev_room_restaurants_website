@@ -65,6 +65,7 @@ users.post('/login', async (c) => {
     const access_token = await signToken({
       id: user._id.toString(),
       email: user.email,
+      role: user.type
     })
 
     return c.json({

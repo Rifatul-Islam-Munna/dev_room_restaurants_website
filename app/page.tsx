@@ -10,6 +10,7 @@ import {
   ApiListResponse,
   MenuItem,
 } from "@/components/custom/admin/menu/MenuItemsPage";
+import { useRouter } from "next/navigation";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1565895405137-3ca0cc5088c8?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
@@ -63,7 +64,7 @@ export default function HomePage() {
       total: Math.max(0, prev.total + priceNum * delta),
     }));
   };
-
+  const router = useRouter();
   const { data: menuRes, isLoading } = useQueryWrapper<
     ApiListResponse<MenuItem[]>
   >(["menu-items"], `/menu-item?limit=4&page=1`);
@@ -88,7 +89,10 @@ export default function HomePage() {
               journey curated by our master chefs in the heart of the city.
             </p>
             <div className="flex flex-wrap gap-6 items-center">
-              <button className="px-10 py-4 bg-[#01696f] text-white rounded-full font-medium tracking-wide hover:bg-[#014d52] hover:shadow-2xl hover:shadow-[#01696f]/20 transition-all active:scale-95">
+              <button
+                onClick={() => router.push("/menu")}
+                className="px-10 py-4 bg-[#01696f] text-white rounded-full font-medium tracking-wide hover:bg-[#014d52] hover:shadow-2xl hover:shadow-[#01696f]/20 transition-all active:scale-95"
+              >
                 Explore Menu
               </button>
               <button className="group flex items-center gap-3 text-[#01696f] dark:text-teal-400 font-medium hover:gap-5 transition-all duration-300">
@@ -161,7 +165,7 @@ export default function HomePage() {
             </p>
             <div className="pt-6">
               <Link
-                href="/about"
+                href="/"
                 className="text-[#01696f] dark:text-teal-400 font-medium border-b border-[#01696f]/20 pb-1 hover:border-[#01696f] transition-all"
               >
                 Read Our Story

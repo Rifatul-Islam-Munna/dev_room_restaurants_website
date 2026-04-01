@@ -3,15 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Banknote,
-  CheckCircle2,
-  Package,
-  Clock,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Banknote } from "lucide-react";
 import { useCartStore } from "@/store/use-cart-store";
+import { useCommonMutationApi } from "@/api-hooks/use-api-mutation";
 
 const DELIVERY = 50;
 const TAX_RATE = 0.05;
@@ -27,57 +22,38 @@ type FormData = {
   notes: string;
 };
 
-export default function CheckoutPage() {
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    phone: "",
-    email: "",
-    street: "",
-    area: "",
-    city: "Dhaka",
-    postal: "",
-    notes: "",
-  });
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderId] = useState(`ORD-${Date.now().toString().slice(-8)}`);
-
-  const items = useCartStore((state) => state.items);
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const subtotal = items.reduce((s, i) => s + i.priceNum * i.quantity, 0);
-  const tax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + tax + DELIVERY;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // send form + items if needed
-    setOrderPlaced(true);
-  };
-
-  const Step = ({ n }: { n: number }) => (
+function Step({ n }: { n: number }) {
+  return (
     <span className="w-7 h-7 rounded-full bg-[#01696f] text-white flex items-center justify-center text-xs font-bold shrink-0">
       {n}
     </span>
   );
+}
 
-  const Input = ({
-    label,
-    name,
-    type = "text",
-    placeholder,
-    colSpan = false,
-  }: {
-    label: string;
-    name: keyof FormData;
-    type?: string;
-    placeholder: string;
-    colSpan?: boolean;
-  }) => (
+type InputProps = {
+  label: string;
+  name: keyof FormData;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => void;
+  type?: string;
+  placeholder: string;
+  colSpan?: boolean;
+};
+
+function Input({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  colSpan = false,
+}: InputProps) {
+  return (
     <div className={colSpan ? "md:col-span-2 space-y-1.5" : "space-y-1.5"}>
       <label className="block text-[10px] uppercase tracking-widest font-semibold text-stone-400">
         {label}
@@ -85,8 +61,8 @@ export default function CheckoutPage() {
       <input
         type={type}
         name={name}
-        value={form[name]}
-        onChange={handleChange}
+        value={value}
+        onChange={onChange}
         placeholder={placeholder}
         className="w-full bg-stone-100 dark:bg-stone-800 rounded-lg px-4 py-3
                    text-sm text-stone-700 dark:text-stone-200
@@ -97,8 +73,96 @@ export default function CheckoutPage() {
       />
     </div>
   );
+}
 
-  if (items.length === 0 && !orderPlaced) {
+export default function CheckoutPage() {
+  const router = useRouter();
+
+  const [form, setForm] = useState<FormData>({
+    name: "",
+    phone: "",
+    email: "",
+    street: "",
+    area: "",
+    city: "Dhaka",
+    postal: "",
+    notes: "",
+  });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const items = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+
+  const { mutate, isPending } = useCommonMutationApi({
+    method: "POST",
+    url: "/order",
+    successMessage: "Order placed successfully",
+    onSuccess: (res: any) => {
+      clearCart?.();
+      const returnedOrder = res?.data ?? res;
+      const backendId = returnedOrder?.id ?? returnedOrder?._id ?? null;
+      router.push(backendId ? `/profile?orderId=${backendId}` : "/profile");
+    },
+    onError: (err: any) => {
+      setErrorMsg(err?.message || "Failed to place order.");
+    },
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const subtotal = items.reduce((s, i) => s + i.priceNum * i.quantity, 0);
+  const tax = Math.round(subtotal * TAX_RATE);
+  const total = subtotal + tax + DELIVERY;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    if (items.length === 0) return;
+
+    if (!form.name || !form.phone || !form.email) {
+      setErrorMsg("Please fill in your name, phone and email.");
+      return;
+    }
+
+    if (!form.street || !form.area || !form.city || !form.postal) {
+      setErrorMsg("Please fill in your full delivery address.");
+      return;
+    }
+
+    const payload = {
+      customer: {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+      },
+      delivery: {
+        street: form.street,
+        area: form.area,
+        city: form.city || "Dhaka",
+        postalCode: form.postal,
+        notes: form.notes || "",
+        type: "delivery" as const,
+      },
+      items: items.map((item) => ({
+        menuItemId: item.id,
+        quantity: item.quantity,
+      })),
+      paymentMethod: "Cash on Delivery" as const,
+      notes: form.notes || "",
+    };
+
+    mutate(payload);
+  };
+
+  if (items.length === 0) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
         <h2 className="font-serif text-3xl text-[#01696f] dark:text-teal-400 mb-3">
@@ -110,8 +174,7 @@ export default function CheckoutPage() {
         <div className="flex gap-3">
           <Link
             href="/cart"
-            className="flex items-center gap-2 text-sm text-[#01696f] dark:text-teal-400
-                       font-medium hover:underline group"
+            className="flex items-center gap-2 text-sm text-[#01696f] dark:text-teal-400 font-medium hover:underline group"
           >
             <ArrowLeft
               size={14}
@@ -132,72 +195,8 @@ export default function CheckoutPage() {
     );
   }
 
-  if (orderPlaced) {
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center
-                   bg-[#01696f]/10 backdrop-blur-md px-4"
-      >
-        <div
-          className="bg-white dark:bg-stone-900 max-w-md w-full rounded-3xl p-8 text-center
-                     border border-stone-200 dark:border-stone-700"
-        >
-          <div className="w-20 h-20 rounded-full bg-[#01696f] flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={36} className="text-white" />
-          </div>
-          <h2 className="font-serif text-3xl text-[#01696f] dark:text-teal-400 font-bold mb-2">
-            Order Placed!
-          </h2>
-          <p className="text-stone-400 text-sm mb-8">
-            Your selection is now in the hands of our executive chefs. Prepare
-            for an editorial dining experience.
-          </p>
-
-          <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-5 mb-8 text-left space-y-4">
-            <div className="flex justify-between items-center pb-3 border-b border-stone-100 dark:border-stone-700">
-              <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">
-                Order ID
-              </span>
-              <span className="font-mono font-bold text-[#01696f] dark:text-teal-400 text-sm">
-                #{orderId}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold flex items-center gap-1.5">
-                <Clock size={12} /> Est. Arrival
-              </span>
-              <span className="font-bold text-stone-700 dark:text-stone-200 text-sm">
-                30 – 45 minutes
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <button
-              className="w-full flex items-center justify-center gap-2
-                         bg-[#01696f] text-white py-3.5 rounded-full
-                         font-semibold text-sm uppercase tracking-widest
-                         hover:bg-[#014d52] active:scale-95 transition-all"
-            >
-              <Package size={15} />
-              Track Order
-            </button>
-            <Link
-              href="/"
-              className="w-full py-3 text-sm text-[#01696f] dark:text-teal-400 font-semibold
-                         hover:underline transition-all text-center"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <main className="pt-24 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-      {/* Header */}
       <header className="mb-10">
         <h1 className="font-serif italic text-4xl md:text-6xl text-[#01696f] dark:text-teal-400 font-light mb-2">
           Securing Your Table
@@ -209,9 +208,7 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 items-start">
-          {/* LEFT: Form */}
           <div className="space-y-6">
-            {/* 1. Contact */}
             <section className="border border-stone-200 dark:border-stone-800 rounded-xl p-6 bg-white dark:bg-stone-900">
               <div className="flex items-center gap-3 mb-6">
                 <Step n={1} />
@@ -223,17 +220,23 @@ export default function CheckoutPage() {
                 <Input
                   label="Full Name"
                   name="name"
+                  value={form.name}
+                  onChange={handleChange}
                   placeholder="Julian Thorne"
                 />
                 <Input
                   label="Phone Number"
                   name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
                   type="tel"
                   placeholder="01XXXXXXXXX"
                 />
                 <Input
                   label="Email Address"
                   name="email"
+                  value={form.email}
+                  onChange={handleChange}
                   type="email"
                   placeholder="j.thorne@savoria.com"
                   colSpan
@@ -241,7 +244,6 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* 2. Delivery */}
             <section className="border border-stone-200 dark:border-stone-800 rounded-xl p-6 bg-white dark:bg-stone-900">
               <div className="flex items-center gap-3 mb-6">
                 <Step n={2} />
@@ -253,15 +255,33 @@ export default function CheckoutPage() {
                 <Input
                   label="Street Address"
                   name="street"
+                  value={form.street}
+                  onChange={handleChange}
                   placeholder="24/B, Crescent Estate"
                   colSpan
                 />
-                <Input label="Area" name="area" placeholder="Gulshan 2" />
-                {/* City now text input */}
-                <Input label="City" name="city" placeholder="Dhaka" />
-                <Input label="Postal Code" name="postal" placeholder="1212" />
+                <Input
+                  label="Area"
+                  name="area"
+                  value={form.area}
+                  onChange={handleChange}
+                  placeholder="Gulshan 2"
+                />
+                <Input
+                  label="City"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="Dhaka"
+                />
+                <Input
+                  label="Postal Code"
+                  name="postal"
+                  value={form.postal}
+                  onChange={handleChange}
+                  placeholder="1212"
+                />
 
-                {/* Notes */}
                 <div className="md:col-span-2 space-y-1.5">
                   <label className="block text-[10px] uppercase tracking-widest font-semibold text-stone-400">
                     Delivery Notes (Optional)
@@ -282,7 +302,6 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* 4. Payment */}
             <section className="border border-stone-200 dark:border-stone-800 rounded-xl p-6 bg-white dark:bg-stone-900">
               <div className="flex items-center gap-3 mb-6">
                 <Step n={3} />
@@ -314,7 +333,8 @@ export default function CheckoutPage() {
               </label>
             </section>
 
-            {/* Back link — mobile */}
+            {errorMsg && <p className="text-sm text-red-500">{errorMsg}</p>}
+
             <div className="lg:hidden">
               <Link
                 href="/cart"
@@ -330,17 +350,12 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* RIGHT: Sticky summary */}
           <aside className="lg:sticky lg:top-28">
-            <div
-              className="border border-stone-200 dark:border-stone-800 rounded-2xl p-6
-                         bg-white dark:bg-stone-900"
-            >
+            <div className="border border-stone-200 dark:border-stone-800 rounded-2xl p-6 bg-white dark:bg-stone-900">
               <h3 className="font-serif italic text-xl text-[#01696f] dark:text-teal-400 mb-5">
                 Your Selection
               </h3>
 
-              {/* Mini item list */}
               <div className="space-y-4 mb-5">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
@@ -368,7 +383,6 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {/* Totals */}
               <div className="border-t border-stone-100 dark:border-stone-800 pt-4 space-y-2.5 mb-5">
                 <div className="flex justify-between text-sm text-stone-400">
                   <span>Subtotal</span>
@@ -390,7 +404,6 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Grand total */}
               <div className="flex justify-between items-end mb-6 pt-1 border-t border-stone-100 dark:border-stone-800">
                 <span className="text-[10px] uppercase tracking-widest font-bold text-stone-400">
                   Total Amount
@@ -400,22 +413,22 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              {/* CTA */}
               <button
                 type="submit"
+                disabled={isPending}
                 className="w-full flex items-center justify-center gap-2
                            bg-[#01696f] text-white py-4 rounded-full
                            font-semibold text-sm uppercase tracking-widest
-                           hover:bg-[#014d52] active:scale-95 transition-all group"
+                           hover:bg-[#014d52] active:scale-95 transition-all group
+                           disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Place Order
+                {isPending ? "Placing..." : "Place Order"}
                 <ArrowRight
                   size={14}
                   className="group-hover:translate-x-1 transition-transform"
                 />
               </button>
 
-              {/* Back link — desktop */}
               <div className="hidden lg:block mt-4 text-center">
                 <Link
                   href="/cart"

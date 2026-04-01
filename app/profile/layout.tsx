@@ -45,25 +45,6 @@ export default function ProfileLayout({
           {/* ── Desktop sidebar ── */}
           <aside className="hidden lg:block sticky top-24 space-y-1">
             {/* Mini user card */}
-            <div
-              className="bg-white dark:bg-stone-900
-                            border border-stone-200 dark:border-stone-800
-                            rounded-2xl p-5 mb-4 flex items-center gap-4"
-            >
-              <div className="w-12 h-12 rounded-full bg-[#01696f] flex items-center justify-center shrink-0">
-                <span className="text-white font-serif font-bold text-lg">
-                  R
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">
-                  Rifat Islam
-                </p>
-                <p className="text-[11px] text-stone-400 truncate">
-                  rifat@example.com
-                </p>
-              </div>
-            </div>
 
             {/* Nav links */}
             <div

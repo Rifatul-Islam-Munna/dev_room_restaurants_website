@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Moon, Sun, ShoppingCart, Menu, X } from "lucide-react";
+import { ShoppingCart, Menu, X, LogIn } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -10,11 +10,9 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
   { label: "Cart", href: "/cart" },
-  { label: "Orders", href: "/orders" },
 ];
 
 export default function Navbar() {
-  const [dark, setDark] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathName = usePathname();
 
@@ -51,6 +49,7 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Cart */}
           <Link
             href="/cart"
             aria-label="Cart"
@@ -60,6 +59,19 @@ export default function Navbar() {
               size={20}
               className="text-teal-900 dark:text-teal-500"
             />
+          </Link>
+
+          {/* Login — desktop */}
+          <Link
+            href="/login"
+            className="hidden md:flex items-center gap-1.5
+                       px-4 py-2 rounded-full
+                       bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                       text-white text-xs font-semibold uppercase tracking-wider
+                       transition-all"
+          >
+            <LogIn size={13} />
+            Login
           </Link>
 
           {/* Mobile hamburger */}
@@ -90,6 +102,20 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+
+          {/* Login — mobile */}
+          <Link
+            href="/login"
+            onClick={() => setMobileOpen(false)}
+            className="mt-4 flex items-center justify-center gap-2
+                       py-3 rounded-full
+                       bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                       text-white text-xs font-semibold uppercase tracking-wider
+                       transition-all"
+          >
+            <LogIn size={13} />
+            Login
+          </Link>
         </div>
       )}
     </nav>

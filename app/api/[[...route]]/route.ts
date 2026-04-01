@@ -8,11 +8,15 @@ import menuItems from '@/server/routes/MenuItem'
 const app = new Hono().basePath('/api')
  import { swagger } from 'hono-swagger-ui'
 import upload from '@/model/upload'
+import orders from '@/server/routes/Order'
+import dashboard from '@/server/routes/dashboard'
 app.use(compress())
 app.route('/user',users)
 app.route('/category',categories)
 app.route('/menu-item',menuItems)
 app.route('/upload',upload)
+app.route('/dashboard',dashboard)
+app.route('/order',orders)
 app.get('/hello', (c) => {
   return c.json({
     message: 'Hello Next.js!',
