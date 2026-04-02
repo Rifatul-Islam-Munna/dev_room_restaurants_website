@@ -229,7 +229,6 @@ export default function OrderHistoryPage() {
         </p>
       </div>
 
-      {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex gap-1 bg-stone-100 dark:bg-stone-800 rounded-xl p-1 w-max">
           {(["All", "Completed", "Cancelled"] as const).map((tab) => (
@@ -268,7 +267,6 @@ export default function OrderHistoryPage() {
         </div>
       </div>
 
-      {/* ── Order list ── */}
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -349,7 +347,6 @@ export default function OrderHistoryPage() {
                       {order.status}
                     </div>
 
-                    {/* Items table */}
                     <div
                       className="divide-y divide-stone-100 dark:divide-stone-800
                                  border border-stone-100 dark:border-stone-800 rounded-xl overflow-hidden"
@@ -418,7 +415,6 @@ export default function OrderHistoryPage() {
                       </div>
                     )}
 
-                    {/* Reorder CTA */}
                     {order.status === "Completed" && (
                       <button
                         className="w-full py-3 rounded-full border border-[#01696f]/30
@@ -437,7 +433,6 @@ export default function OrderHistoryPage() {
         </div>
       )}
 
-      {/* ── Pagination ── */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-xs text-stone-400">

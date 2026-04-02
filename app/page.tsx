@@ -54,8 +54,6 @@ const STEPS = [
   },
 ];
 
-/* ── Component ───────────────────────────────────────────── */
-
 export default function HomePage() {
   const [cart, setCart] = useState({ count: 0, total: 0 });
   const handleCartChange = (name: string, delta: number, priceNum: number) => {

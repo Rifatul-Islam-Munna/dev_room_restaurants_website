@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { CalendarDays } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -33,9 +33,7 @@ export function AppSidebar({ navItems }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    // "offcanvas" = sidebar fully slides off-screen when trigger is clicked
     <Sidebar collapsible="offcanvas">
-      {/* ── Brand ── */}
       <SidebarHeader className="h-16 border-b border-sidebar-border px-5 flex flex-row items-center gap-3">
         <div className="w-7 h-7 rounded-lg bg-[#01696f] flex items-center justify-center shrink-0">
           <span className="text-white font-serif font-bold text-sm leading-none">
@@ -52,7 +50,6 @@ export function AppSidebar({ navItems }: AppSidebarProps) {
         </div>
       </SidebarHeader>
 
-      {/* ── Nav items ── */}
       <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] tracking-widest uppercase text-stone-400 mb-1 px-4">
@@ -97,7 +94,6 @@ export function AppSidebar({ navItems }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── Footer CTA ── */}
       <SidebarFooter className="p-4 border-t border-sidebar-border"></SidebarFooter>
     </Sidebar>
   );

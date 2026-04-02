@@ -37,7 +37,6 @@ export default function Footer() {
   return (
     <footer className="bg-stone-100 dark:bg-stone-950 w-full py-12 px-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-7xl mx-auto border-t border-stone-200 dark:border-stone-800 pt-16">
-        {/* Brand */}
         <div className="flex flex-col gap-6">
           <span className="text-3xl font-serif italic text-teal-900 dark:text-teal-500">
             Savoria
@@ -60,7 +59,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Nav columns */}
         <div className="grid grid-cols-2 gap-8">
           {[
             { title: "Explore", links: EXPLORE },
@@ -86,7 +84,6 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Newsletter */}
         <div className="flex flex-col gap-6">
           <h4 className="text-xs tracking-widest uppercase text-teal-900 dark:text-teal-500 font-bold">
             Subscribe

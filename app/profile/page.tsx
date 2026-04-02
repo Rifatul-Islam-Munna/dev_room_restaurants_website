@@ -12,8 +12,6 @@ import { useQueryWrapper } from "@/api-hooks/react-query-wrapper";
 import { logoutUser } from "@/actions/auth";
 import { useRouter } from "next/navigation";
 
-/* ── Types ─────────────────────────────────────────────────────────────── */
-
 type BackendOrderStatus = "Pending" | "Preparing" | "Serving" | "Completed";
 
 type TrackStep = "Placed" | "Preparing" | "Ready" | "Delivered";
@@ -296,7 +294,6 @@ export default function ProfileHomePage() {
             </button>
           </div>
 
-          {/* Stats row */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-6 pt-5 border-t border-stone-100 dark:border-stone-800">
             {[
               {
@@ -328,7 +325,6 @@ export default function ProfileHomePage() {
         </div>
       </div>
 
-      {/* ── Active orders / tracking ── */}
       <div className="space-y-4">
         <div>
           <h3 className="font-serif text-xl text-stone-800 dark:text-stone-100">
@@ -372,7 +368,6 @@ export default function ProfileHomePage() {
                            border border-stone-200 dark:border-stone-800
                            rounded-2xl p-5 md:p-6 space-y-5"
               >
-                {/* Order header */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="font-mono text-sm font-bold text-[#01696f] dark:text-teal-400">
@@ -393,7 +388,6 @@ export default function ProfileHomePage() {
                   </span>
                 </div>
 
-                {/* Items */}
                 <div className="flex flex-wrap gap-2">
                   {order.items.map((item, i) => (
                     <span

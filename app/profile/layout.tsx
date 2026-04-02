@@ -19,7 +19,6 @@ export default function ProfileLayout({
   return (
     <div className="min-h-screen bg-[#faf9f5] dark:bg-stone-950 pt-20 pb-16">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
-        {/* ── Mobile top tab bar ── */}
         <nav
           className="flex lg:hidden gap-1 bg-white dark:bg-stone-900
                         border border-stone-200 dark:border-stone-800
@@ -41,11 +40,7 @@ export default function ProfileLayout({
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
-          {/* ── Desktop sidebar ── */}
           <aside className="hidden lg:block sticky top-24 space-y-1">
-            {/* Mini user card */}
-
-            {/* Nav links */}
             <div
               className="bg-white dark:bg-stone-900
                             border border-stone-200 dark:border-stone-800
@@ -76,7 +71,6 @@ export default function ProfileLayout({
             </div>
           </aside>
 
-          {/* ── Page content ── */}
           <main className="min-w-0">{children}</main>
         </div>
       </div>
