@@ -21,7 +21,6 @@ export default function Navbar() {
   const pathName = usePathname();
   const { user } = useUser();
 
-  // Call the server action on mount to check auth state
   useEffect(() => {
     isHaveAccessToken().then(setIsLoggedIn);
   }, [pathName]);
@@ -35,7 +34,6 @@ export default function Navbar() {
       )}
     >
       <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
-        {/* Brand */}
         <Link
           href="/"
           className="text-2xl font-serif italic text-teal-900 dark:text-teal-500 tracking-tight"
@@ -43,7 +41,6 @@ export default function Navbar() {
           Savoria
         </Link>
 
-        {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map(({ label, href }) => (
             <Link
@@ -56,10 +53,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* Cart */}
-          {/* Cart */}
           <Link
             href="/cart"
             aria-label="Cart"
@@ -83,7 +77,6 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Avatar → /admin  OR  Login — desktop */}
           {isLoggedIn ? (
             <Link
               href={user?.type === "admin" ? "/admin" : "/profile"}
@@ -109,7 +102,6 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle mobile menu"
@@ -124,7 +116,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur-xl px-8 pb-6 flex flex-col border-t border-stone-200/20">
           {NAV_LINKS.map(({ label, href }) => (
@@ -138,7 +129,6 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Avatar → /admin  OR  Login — mobile */}
           {isLoggedIn ? (
             <Link
               href="/admin"
