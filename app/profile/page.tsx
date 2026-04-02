@@ -9,6 +9,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useQueryWrapper } from "@/api-hooks/react-query-wrapper";
+import { logoutUser } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -202,6 +204,7 @@ export default function ProfileHomePage() {
     ["profile-active-orders"],
     "/order/active",
   );
+  const router = useRouter();
 
   const loading = isLoading || isPending;
 
@@ -211,7 +214,10 @@ export default function ProfileHomePage() {
   const totalSpent = data?.data?.totalSpent ?? 0;
 
   const avatarLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
-
+  const handelLogout = async () => {
+    await logoutUser();
+    router.push("/");
+  };
   if (loading) {
     return <ProfileSkeleton />;
   }
@@ -277,13 +283,14 @@ export default function ProfileHomePage() {
             </div>
 
             <button
+              onClick={handelLogout}
               className="self-start shrink-0 px-5 py-2 rounded-full border
                          border-stone-200 dark:border-stone-700
                          text-xs font-semibold text-stone-600 dark:text-stone-300
                          hover:bg-stone-100 dark:hover:bg-stone-800
                          transition-colors"
             >
-              Edit Profile
+              Log Out
             </button>
           </div>
 

@@ -9,7 +9,6 @@ import {
 const NAV = [
   { label: "Overview", href: "/profile", icon: LayoutDashboard },
   { label: "Order History", href: "/profile/history", icon: ClockIcon },
-  { label: "Settings", href: "/profile/settings", icon: Settings },
 ];
 
 export default function ProfileLayout({

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShoppingCart, Menu, X, LogIn } from "lucide-react";
+import { ShoppingCart, Menu, X, LogIn, UserCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
+import { isHaveAccessToken } from "@/actions/auth";
+import { useUser } from "@/lib/useUser";
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
@@ -14,15 +15,20 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const pathName = usePathname();
+  const { user } = useUser();
+
+  // Call the server action on mount to check auth state
+  useEffect(() => {
+    isHaveAccessToken().then(setIsLoggedIn);
+  }, [pathName]);
 
   return (
     <nav
       className={cn(
         "fixed top-0 w-full z-50 bg-stone-50/80 dark:bg-stone-900/80 backdrop-blur-xl shadow-sm dark:shadow-none transition-all",
-        {
-          hidden: pathName.startsWith("/admin"),
-        },
+        { hidden: pathName.startsWith("/admin") },
       )}
     >
       <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
@@ -61,18 +67,31 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* Login — desktop */}
-          <Link
-            href="/login"
-            className="hidden md:flex items-center gap-1.5
-                       px-4 py-2 rounded-full
-                       bg-[#01696f] hover:bg-[#014d52] active:scale-95
-                       text-white text-xs font-semibold uppercase tracking-wider
-                       transition-all"
-          >
-            <LogIn size={13} />
-            Login
-          </Link>
+          {/* Avatar → /admin  OR  Login — desktop */}
+          {isLoggedIn ? (
+            <Link
+              href={user?.type === "admin" ? "/admin" : "/profile"}
+              aria-label="Go to admin panel"
+              className="hidden md:flex items-center justify-center
+                         w-9 h-9 rounded-full
+                         bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                         transition-all"
+            >
+              <UserCircle size={20} className="text-white" />
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden md:flex items-center gap-1.5
+                         px-4 py-2 rounded-full
+                         bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                         text-white text-xs font-semibold uppercase tracking-wider
+                         transition-all"
+            >
+              <LogIn size={13} />
+              Login
+            </Link>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -103,19 +122,34 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Login — mobile */}
-          <Link
-            href="/login"
-            onClick={() => setMobileOpen(false)}
-            className="mt-4 flex items-center justify-center gap-2
-                       py-3 rounded-full
-                       bg-[#01696f] hover:bg-[#014d52] active:scale-95
-                       text-white text-xs font-semibold uppercase tracking-wider
-                       transition-all"
-          >
-            <LogIn size={13} />
-            Login
-          </Link>
+          {/* Avatar → /admin  OR  Login — mobile */}
+          {isLoggedIn ? (
+            <Link
+              href="/admin"
+              onClick={() => setMobileOpen(false)}
+              className="mt-4 flex items-center justify-center gap-2
+                         py-3 rounded-full
+                         bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                         text-white text-xs font-semibold uppercase tracking-wider
+                         transition-all"
+            >
+              <UserCircle size={16} />
+              Admin Panel
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className="mt-4 flex items-center justify-center gap-2
+                         py-3 rounded-full
+                         bg-[#01696f] hover:bg-[#014d52] active:scale-95
+                         text-white text-xs font-semibold uppercase tracking-wider
+                         transition-all"
+            >
+              <LogIn size={13} />
+              Login
+            </Link>
+          )}
         </div>
       )}
     </nav>
