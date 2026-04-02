@@ -44,6 +44,15 @@ export default function SignInPage() {
         fill: "#e6f4f3",
       });
     },
+    onError: (error) => {
+      sileo.error({
+        title: "Error",
+        description: error?.message || "Unknown error",
+        duration: 2000,
+        fill: "#e6f4f3",
+      });
+      console.log("error", error);
+    },
   });
   const [form, setForm] = useState<SignInForm>({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);

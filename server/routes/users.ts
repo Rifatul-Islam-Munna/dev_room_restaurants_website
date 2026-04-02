@@ -50,16 +50,16 @@ users.post('/login', async (c) => {
   try {
     await connectDB()
     const { email, password } = await c.req.json()
-
+      
    
     const user = await User.findOne({ email }).select('+password')
     if (!user) {
-      return c.json({ success: false, message: 'Invalid credentials' }, 401)
+      return c.json({ success: false, message: 'User not found' }, 404)
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
-      return c.json({ success: false, message: 'Invalid credentials' }, 401)
+      return c.json({ success: false, message: 'Invalid credentials' }, 404)
     }
 
     const access_token = await signToken({

@@ -3,6 +3,7 @@ import { PostRequestAxios } from "@/api-hooks/api-hooks";
 import { cookies } from "next/headers";
 
 export const loginUser = async (email: string, password: string) => {
+    console.log("Form submitted:", email,password);
     const [data, error] = await PostRequestAxios<Record<string, string>>("/user/login",{email,password});
     if(data){
     const cookie = await cookies();
@@ -10,6 +11,8 @@ export const loginUser = async (email: string, password: string) => {
    cookie.set("user",  JSON.stringify( data?.user) || "", {  httpOnly: true,secure: true,path:"/", maxAge:60*60*24*7 });
 
     }
+
+    console.log("login-data", data,"login-error",error);
    
    return {data,error};
 
