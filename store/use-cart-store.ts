@@ -21,6 +21,7 @@ type CartStore = {
   items: CartItem[];
 
   addToCart: (item: AddToCartPayload) => void;
+  buyNow: (item: AddToCartPayload) => void;
   increaseQty: (id: string) => void;
   decreaseQty: (id: string) => void;
   removeFromCart: (id: string) => void;
@@ -56,6 +57,11 @@ export const useCartStore = create<CartStore>()((set, get) => ({
         items: [...state.items, { ...item, quantity: qtyToAdd }],
       };
     }),
+
+  buyNow: (item) =>
+    set(() => ({
+      items: [{ ...item, quantity: item.quantity ?? 1 }],
+    })),
 
   increaseQty: (id) =>
     set((state) => ({

@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Plus, Minus, ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Plus, Minus, ShoppingCart } from "lucide-react";
 import { sileo } from "sileo";
 import { useCartStore } from "@/store/use-cart-store";
 
@@ -65,13 +66,16 @@ export default function DishCard({
 
   return (
     <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-900">
-      <div className="relative aspect-square w-full">
+      <Link
+        href={`/menu/${id}`}
+        className="group block relative aspect-square w-full"
+      >
         <Image
           src={image}
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover"
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         {category && (
           <span
@@ -91,24 +95,30 @@ export default function DishCard({
             Chef&apos;s Pick
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="px-3 py-3 flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-serif text-sm font-semibold text-stone-800 dark:text-stone-100 leading-tight truncate">
+            <Link
+              href={`/menu/${id}`}
+              className="font-serif text-sm font-semibold text-stone-800 dark:text-stone-100 leading-tight truncate block hover:text-[#01696f] dark:hover:text-teal-400 transition-colors"
+            >
               {name}
-            </p>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 leading-tight line-clamp-1 mt-0.5">
+            </Link>
+            <Link
+              href={`/menu/${id}`}
+              className="text-[11px] text-stone-400 dark:text-stone-500 leading-tight line-clamp-1 mt-0.5 block hover:text-stone-500 dark:hover:text-stone-400 transition-colors"
+            >
               {subtitle}
-            </p>
+            </Link>
           </div>
           <span className="text-xs font-bold text-[#01696f] dark:text-teal-400 shrink-0">
             {price}
           </span>
         </div>
 
-        <div className="pt-1 border-t border-stone-100 dark:border-stone-800">
+        <div className="pt-1 border-t border-stone-100 dark:border-stone-800 space-y-2">
           {qty === 0 ? (
             <button
               onClick={handleInitialAdd}
