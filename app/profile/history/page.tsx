@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -13,7 +13,12 @@ import { useQueryWrapper } from "@/api-hooks/react-query-wrapper";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
-type OrderStatus = "Completed" | "Cancelled";
+type OrderStatus =
+  | "Pending"
+  | "Preparing"
+  | "Serving"
+  | "Completed"
+  | "Cancelled";
 type PaymentMethod = "Cash on Delivery" | "Card" | "Online";
 type DeliveryType = "delivery" | "takeout" | "table";
 
@@ -85,6 +90,21 @@ const STATUS_CONFIG: Record<
   OrderStatus,
   { bg: string; text: string; dot: string }
 > = {
+  Pending: {
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    text: "text-blue-600 dark:text-blue-400",
+    dot: "bg-blue-400",
+  },
+  Preparing: {
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    text: "text-amber-700 dark:text-amber-400",
+    dot: "bg-amber-400",
+  },
+  Serving: {
+    bg: "bg-teal-50 dark:bg-teal-900/20",
+    text: "text-[#01696f] dark:text-teal-400",
+    dot: "bg-[#01696f]",
+  },
   Completed: {
     bg: "bg-teal-50 dark:bg-teal-900/20",
     text: "text-[#01696f] dark:text-teal-400",
@@ -98,6 +118,7 @@ const STATUS_CONFIG: Record<
 };
 
 const LIMIT = 8;
+const EMPTY_ORDERS: Order[] = [];
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
 
@@ -156,10 +177,9 @@ export default function OrderHistoryPage() {
     `/order?${query.toString()}`,
   );
 
-  const orders = data?.data ?? [];
+  const orders = data?.data ?? EMPTY_ORDERS;
   const pagination = data?.pagination;
-
-  const filteredOrders = useMemo(() => orders, [orders]);
+  const filteredOrders = orders;
 
   const handleFilterChange = (value: FilterType) => {
     setFilter(value);
@@ -267,9 +287,7 @@ export default function OrderHistoryPage() {
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((order) => {
-            const s =
-              STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG] ??
-              STATUS_CONFIG.Completed;
+            const s = STATUS_CONFIG[order.status];
             const isExpanded = expandedId === order._id;
 
             return (
@@ -357,7 +375,7 @@ export default function OrderHistoryPage() {
 
                       <div className="flex justify-between items-center px-4 py-3 bg-white dark:bg-stone-900">
                         <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400">
-                          Total Paid
+                          Order Total
                         </p>
                         <span className="font-serif text-base font-bold text-[#01696f] dark:text-teal-400 tabular-nums">
                           ৳{order.pricing.total.toLocaleString()}

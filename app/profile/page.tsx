@@ -70,6 +70,7 @@ type ActiveOrdersResponse = {
     user: UserInfo | null;
     activeOrders: ActiveOrder[];
     totalOrders: number;
+    cancelledOrders: number;
     totalSpent: number;
   };
 };
@@ -211,6 +212,7 @@ export default function ProfileHomePage() {
   const user = data?.data?.user;
   const orders = data?.data?.activeOrders ?? [];
   const totalOrders = data?.data?.totalOrders ?? 0;
+  const cancelledOrders = data?.data?.cancelledOrders ?? 0;
   const totalSpent = data?.data?.totalSpent ?? 0;
 
   const avatarLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
@@ -295,12 +297,17 @@ export default function ProfileHomePage() {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-2 gap-3 mt-6 pt-5 border-t border-stone-100 dark:border-stone-800">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-6 pt-5 border-t border-stone-100 dark:border-stone-800">
             {[
               {
                 icon: ShoppingBag,
                 label: "Total Orders",
                 value: totalOrders.toLocaleString(),
+              },
+              {
+                icon: ShoppingBag,
+                label: "Cancelled Orders",
+                value: cancelledOrders.toLocaleString(),
               },
               {
                 icon: TrendingUp,
@@ -330,6 +337,12 @@ export default function ProfileHomePage() {
           <p className="text-xs text-stone-400 mt-0.5 italic">
             Track your current deliveries in real time.
           </p>
+          {cancelledOrders > 0 && (
+            <p className="text-xs text-stone-400 mt-1">
+              {cancelledOrders} cancelled order
+              {cancelledOrders === 1 ? "" : "s"} available in Order History.
+            </p>
+          )}
         </div>
 
         {orders.length === 0 ? (

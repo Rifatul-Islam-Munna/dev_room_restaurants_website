@@ -1,9 +1,10 @@
 import { Hono } from 'hono'
+import mongoose from 'mongoose'
 import { connectDB } from '@/lib/db'
 
 import MenuItem from '@/model/MenuItem'
 import { authMiddleware } from '../middleware/auth'
-import Order from "@/model/order"
+import Order from '@/model/order'
 import User from '@/model/User'
 
 
@@ -11,6 +12,11 @@ const orders = new Hono()
 
 const DELIVERY_FEE = 50
 const TAX_RATE = 0.05
+const ACTIVE_ORDER_STATUSES = ['Pending', 'Preparing', 'Serving'] as const
+const COMPLETED_ORDER_STATUS = 'Completed' as const
+const CANCELLED_ORDER_STATUS = 'Cancelled' as const
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback
 
 
 orders.post('/', authMiddleware, async (c) => {
@@ -142,8 +148,11 @@ orders.post('/', authMiddleware, async (c) => {
       },
       201
     )
-  } catch (error: any) {
-    return c.json({ success: false, message: error.message }, 500)
+  } catch (error: unknown) {
+    return c.json(
+      { success: false, message: getErrorMessage(error, 'Failed to place order') },
+      500
+    )
   }
 })
 
@@ -176,7 +185,7 @@ orders.get('/', authMiddleware, async (c) => {
       return c.json({ success: true, data: order })
     }
 
-    const filter: any = {}
+    const filter: Record<string, unknown> = {}
 
    
     if (user?.role !== 'admin') {
@@ -229,8 +238,11 @@ orders.get('/', authMiddleware, async (c) => {
         hasPrevPage: safePage > 1,
       },
     })
-  } catch (error: any) {
-    return c.json({ success: false, message: error.message }, 500)
+  } catch (error: unknown) {
+    return c.json(
+      { success: false, message: getErrorMessage(error, 'Failed to fetch orders') },
+      500
+    )
   }
 })
 orders.get('/active', authMiddleware, async (c) => {
@@ -247,29 +259,38 @@ orders.get('/active', authMiddleware, async (c) => {
       )
     }
 
+    const customerUserId = mongoose.isValidObjectId(String(userId))
+      ? new mongoose.Types.ObjectId(String(userId))
+      : userId
+    const userOrderMatch = {
+      'customer.userId': customerUserId,
+    }
+
     const [user, activeOrders, summary] = await Promise.all([
       User.findById(userId)
         .select('name email phone image address createdAt')
         .lean(),
 
       Order.find({
-        'customer.userId': userId,
-        status: { $in: ['Pending', 'Preparing', 'Serving'] },
+        ...userOrderMatch,
+        status: { $in: ACTIVE_ORDER_STATUSES },
       })
         .sort({ createdAt: -1 })
         .lean(),
 
       Order.aggregate([
         {
-          $match: {
-            'customer.userId': userId,
-          },
+          $match: userOrderMatch,
         },
         {
           $facet: {
             totalOrders: [{ $count: 'count' }],
+            cancelledOrders: [
+              { $match: { status: CANCELLED_ORDER_STATUS } },
+              { $count: 'count' },
+            ],
             totalSpent: [
-              { $match: { status: 'Completed' } },
+              { $match: { status: COMPLETED_ORDER_STATUS } },
               {
                 $group: {
                   _id: null,
@@ -283,6 +304,7 @@ orders.get('/active', authMiddleware, async (c) => {
     ])
 
     const totalOrders = summary[0]?.totalOrders[0]?.count ?? 0
+    const cancelledOrders = summary[0]?.cancelledOrders[0]?.count ?? 0
     const totalSpent = summary[0]?.totalSpent[0]?.total ?? 0
 
     return c.json({
@@ -291,14 +313,15 @@ orders.get('/active', authMiddleware, async (c) => {
         user,
         activeOrders,
         totalOrders,
+        cancelledOrders,
         totalSpent,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     return c.json(
       {
         success: false,
-        message: error.message || 'Failed to fetch active orders',
+        message: getErrorMessage(error, 'Failed to fetch active orders'),
       },
       500
     )
@@ -310,6 +333,7 @@ orders.patch('/', authMiddleware, async (c) => {
   try {
     await connectDB()
 
+    const user = c.get('user')
     const body = await c.req.json()
     const id = body?.id || c.req.query('id')
 
@@ -326,6 +350,16 @@ orders.patch('/', authMiddleware, async (c) => {
       return c.json({ success: false, message: 'Order not found' }, 404)
     }
 
+    const adminOnlyFields = ['status', 'paymentStatus', 'estimatedDeliveryTime'] as const
+    const isAdminOnlyUpdate = adminOnlyFields.some((field) => body[field] !== undefined)
+
+    if (isAdminOnlyUpdate && user?.role !== 'admin') {
+      return c.json(
+        { success: false, message: 'Only admins can update order status or payment details' },
+        403
+      )
+    }
+
     const allowedFields = ['status', 'paymentStatus', 'notes', 'estimatedDeliveryTime'] as const
 
     for (const key of allowedFields) {
@@ -334,6 +368,7 @@ orders.patch('/', authMiddleware, async (c) => {
       }
     }
 
+    order.updatedAt = new Date()
     await order.save()
 
     return c.json({
@@ -341,8 +376,11 @@ orders.patch('/', authMiddleware, async (c) => {
       message: 'Order updated successfully',
       data: order,
     })
-  } catch (error: any) {
-    return c.json({ success: false, message: error.message }, 500)
+  } catch (error: unknown) {
+    return c.json(
+      { success: false, message: getErrorMessage(error, 'Failed to update order') },
+      500
+    )
   }
 })
 
@@ -378,14 +416,20 @@ orders.delete('/', authMiddleware, async (c) => {
       )
     }
 
-    await order.deleteOne()
+    order.status = CANCELLED_ORDER_STATUS
+    order.updatedAt = new Date()
+    await order.save()
 
     return c.json({
       success: true,
       message: 'Order cancelled successfully',
+      data: order,
     })
-  } catch (error: any) {
-    return c.json({ success: false, message: error.message }, 500)
+  } catch (error: unknown) {
+    return c.json(
+      { success: false, message: getErrorMessage(error, 'Failed to cancel order') },
+      500
+    )
   }
 })
 

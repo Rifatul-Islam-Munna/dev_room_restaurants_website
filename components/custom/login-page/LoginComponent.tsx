@@ -30,7 +30,11 @@ export default function SignInPage() {
           duration: 2000,
           fill: "#e6f4f3",
         });
-        router.push("/admin");
+        console.log("login-data", data);
+        const user = data?.data?.user;
+        const isAdmin = user?.type === "admin";
+
+        router.push(isAdmin ? "/admin" : "/profile");
         return;
       }
       sileo.error({

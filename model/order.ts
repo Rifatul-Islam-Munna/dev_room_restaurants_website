@@ -6,6 +6,7 @@ export const ORDER_STATUS = [
   "Preparing",
   "Serving",
   "Completed",
+  "Cancelled",
 ] as const;
 
 export const PAYMENT_METHODS = [

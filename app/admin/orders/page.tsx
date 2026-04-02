@@ -13,7 +13,12 @@ import { useQueryWrapper } from "@/api-hooks/react-query-wrapper";
 import { useCommonMutationApi } from "@/api-hooks/use-api-mutation";
 import { useQueryClient } from "@tanstack/react-query";
 
-type OrderStatus = "Pending" | "Preparing" | "Serving" | "Completed";
+type OrderStatus =
+  | "Pending"
+  | "Preparing"
+  | "Serving"
+  | "Completed"
+  | "Cancelled";
 type PaymentMethod = "Cash on Delivery" | "Card" | "Online";
 type PaymentStatus = "pending" | "paid" | "failed";
 type DeliveryType = "delivery" | "takeout" | "table";
@@ -104,6 +109,11 @@ const STATUS_CONFIG: Record<
     text: "text-stone-500 dark:text-stone-400",
     dot: "bg-stone-400",
   },
+  Cancelled: {
+    bg: "bg-red-50 dark:bg-red-900/20",
+    text: "text-red-500 dark:text-red-400",
+    dot: "bg-red-400",
+  },
 };
 
 const PAYMENT_STATUS_CONFIG: Record<
@@ -129,6 +139,7 @@ const ALL_STATUSES: OrderStatus[] = [
   "Preparing",
   "Serving",
   "Completed",
+  "Cancelled",
 ];
 
 type FilterTab = "All" | OrderStatus;
@@ -138,9 +149,11 @@ const TABS: FilterTab[] = [
   "Preparing",
   "Serving",
   "Completed",
+  "Cancelled",
 ];
 
 const LIMIT = 10;
+const EMPTY_ORDERS: Order[] = [];
 
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
@@ -165,7 +178,7 @@ export default function OrdersPage() {
     url: `/order`,
   });
 
-  const orders: Order[] = res?.data ?? [];
+  const orders = res?.data ?? EMPTY_ORDERS;
   const pagination: Pagination | undefined = res?.pagination;
 
   const counts = useMemo(() => {
@@ -175,6 +188,7 @@ export default function OrdersPage() {
       Preparing: 0,
       Serving: 0,
       Completed: 0,
+      Cancelled: 0,
     };
     // count from currently loaded data as approximation
     orders.forEach((o) => {
@@ -262,6 +276,8 @@ export default function OrdersPage() {
                               ? "bg-teal-100 text-[#01696f]"
                               : tab === "Completed"
                                 ? "bg-stone-100 text-stone-500"
+                                : tab === "Cancelled"
+                                  ? "bg-red-100 text-red-500"
                                 : "bg-stone-100 text-stone-500"
                         : "bg-stone-200 dark:bg-stone-700 text-stone-500"
                     }`}

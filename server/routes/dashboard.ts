@@ -8,6 +8,9 @@ import Order from '@/model/order'
 
 
 const dashboard = new Hono()
+const CANCELLED_ORDER_STATUS = 'Cancelled' as const
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback
 
 dashboard.get('/stats', authMiddleware, async (c) => {
   try {
@@ -21,12 +24,13 @@ dashboard.get('/stats', authMiddleware, async (c) => {
 
     const [totalOrders, pendingOrders, menuItems, revenueTodayAgg] =
       await Promise.all([
-        Order.countDocuments(),
+        Order.countDocuments({ status: { $ne: CANCELLED_ORDER_STATUS } }),
         Order.countDocuments({ status: 'Pending' }),
         MenuItem.countDocuments(),
         Order.aggregate([
           {
             $match: {
+              status: { $ne: CANCELLED_ORDER_STATUS },
               createdAt: {
                 $gte: startOfDay,
                 $lte: endOfDay,
@@ -53,11 +57,11 @@ dashboard.get('/stats', authMiddleware, async (c) => {
         menuItems,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     return c.json(
       {
         success: false,
-        message: error.message || 'Failed to fetch dashboard stats',
+        message: getErrorMessage(error, 'Failed to fetch dashboard stats'),
       },
       500
     )

@@ -13,6 +13,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/custom/common/app-sidebar";
+import { useUser } from "@/lib/useUser";
+import { logoutUser } from "@/actions/auth";
+import { useRouter } from "next/navigation";
 
 /* ── Define all nav items here — passed down to the reusable sidebar ── */
 const NAV_ITEMS = [
@@ -26,17 +29,11 @@ const NAV_ITEMS = [
     label: "Orders",
     icon: ShoppingBag,
     href: "/admin/orders",
-    badge: 14, // pending count badge — update dynamically as needed
   },
   {
     label: "Menu Items",
     icon: UtensilsCrossed,
     href: "/admin/menu",
-  },
-  {
-    label: "Add New Item",
-    icon: PlusCircle,
-    href: "/admin/menu/new",
   },
 ];
 
@@ -45,6 +42,13 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handelUserLogout = async () => {
+    await logoutUser();
+    router.push("/");
+  };
   return (
     <SidebarProvider>
       {/* Sidebar receives all nav config from this layout */}
@@ -71,16 +75,6 @@ export default function AdminLayout({
 
           <div className="flex items-center gap-3">
             {/* Notification bell */}
-            <button
-              className="relative p-2 rounded-lg text-stone-400
-                         hover:text-stone-700 dark:hover:text-stone-200
-                         hover:bg-stone-100 dark:hover:bg-stone-800
-                         transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell size={16} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-400 rounded-full" />
-            </button>
 
             {/* User info */}
             <div
@@ -89,11 +83,12 @@ export default function AdminLayout({
             >
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-stone-700 dark:text-stone-200">
-                  Admin Savoria
+                  {user?.fullName ?? "admin"}
                 </p>
-                <p className="text-[10px] text-stone-400">admin@savoria.com</p>
+                <p className="text-[10px] text-stone-400">{user?.email}</p>
               </div>
               <button
+                onClick={handelUserLogout}
                 className="p-2 rounded-lg text-stone-300 dark:text-stone-600
                            hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
                            transition-colors"

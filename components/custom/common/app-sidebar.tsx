@@ -98,19 +98,7 @@ export function AppSidebar({ navItems }: AppSidebarProps) {
       </SidebarContent>
 
       {/* ── Footer CTA ── */}
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <button
-          className="w-full flex items-center justify-center gap-2
-                     py-3 px-4 rounded-full
-                     border border-[#01696f]/30 text-[#01696f] dark:text-teal-400
-                     text-xs font-semibold uppercase tracking-wider
-                     hover:bg-[#01696f]/5 dark:hover:bg-teal-900/20
-                     transition-colors"
-        >
-          <CalendarDays size={13} />
-          Reserve a Table
-        </button>
-      </SidebarFooter>
+      <SidebarFooter className="p-4 border-t border-sidebar-border"></SidebarFooter>
     </Sidebar>
   );
 }

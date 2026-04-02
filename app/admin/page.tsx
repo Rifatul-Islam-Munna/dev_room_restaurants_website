@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
     {
       label: "Total Orders",
       value: stats ? stats.totalOrders.toLocaleString() : "0",
-      sub: "All recorded orders",
+      sub: "All non-cancelled orders",
       icon: BookOpen,
       trend: "up",
     },
@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
     {
       label: "Revenue Today",
       value: stats ? formatCurrency(stats.revenueToday) : "৳0",
-      sub: "Today’s total revenue",
+      sub: "Today's revenue excluding cancelled orders",
       icon: BadgeDollarSign,
       trend: "up",
     },

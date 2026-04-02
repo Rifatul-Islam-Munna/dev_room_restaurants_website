@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { isHaveAccessToken } from "@/actions/auth";
 import { useUser } from "@/lib/useUser";
+import { useCartStore } from "@/store/use-cart-store";
+import { Badge } from "@/components/ui/badge";
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
@@ -23,6 +25,7 @@ export default function Navbar() {
   useEffect(() => {
     isHaveAccessToken().then(setIsLoggedIn);
   }, [pathName]);
+  const { totalItems } = useCartStore((state) => state);
 
   return (
     <nav
@@ -56,15 +59,28 @@ export default function Navbar() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {/* Cart */}
+          {/* Cart */}
           <Link
             href="/cart"
             aria-label="Cart"
-            className="p-2 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors"
+            className="relative p-2 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors"
           >
             <ShoppingCart
               size={20}
               className="text-teal-900 dark:text-teal-500"
             />
+            {totalItems() > 0 && (
+              <Badge
+                className="absolute -top-1 -right-1
+                 min-w-[18px] h-[18px] px-1
+                 flex items-center justify-center
+                 rounded-full text-[10px] font-bold leading-none
+                 bg-[#01696f] hover:bg-[#01696f] text-white
+                 pointer-events-none select-none"
+              >
+                {totalItems() > 99 ? "99+" : totalItems()}
+              </Badge>
+            )}
           </Link>
 
           {/* Avatar → /admin  OR  Login — desktop */}
