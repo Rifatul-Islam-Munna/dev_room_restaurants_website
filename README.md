@@ -15,6 +15,17 @@ npm install
 
 # Run development server
 npm run dev
+
+#Envs
+
+```
+
+MONGODB_URI =
+BASE_URL =
+JWT_SECRET =
+
+```
+
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
