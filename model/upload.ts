@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { mkdir, writeFile } from 'fs/promises'
-import path from 'path'
 import sharp from 'sharp'
 import { authMiddleware } from '@/server/middleware/auth'
+import { getRuntimeUploadPath, runtimeUploadDir } from '@/lib/upload-storage'
 
 
 const upload = new Hono()
@@ -38,10 +38,9 @@ upload.post('/image', authMiddleware, async (c) => {
       .toString(36)
       .substring(2, 10)}.webp`
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    const outputPath = path.join(uploadDir, fileName)
+    const outputPath = getRuntimeUploadPath(fileName)
 
-    await mkdir(uploadDir, { recursive: true })
+    await mkdir(runtimeUploadDir, { recursive: true })
 
     const resizedImage = await sharp(buffer)
       .resize(800, 800, {
@@ -62,8 +61,10 @@ upload.post('/image', authMiddleware, async (c) => {
         imageUrl,
       },
     })
-  } catch (error: any) {
-    return c.json({ success: false, message: error.message }, 500)
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to upload image'
+    return c.json({ success: false, message }, 500)
   }
 })
 

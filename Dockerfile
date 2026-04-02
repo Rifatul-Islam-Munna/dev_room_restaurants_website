@@ -35,11 +35,16 @@ ENV HOSTNAME="0.0.0.0"
 # Security: run as non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+RUN mkdir -p /app/data/uploads
 
 # Copy only standalone output (minimal files)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+RUN cp -R /app/public/uploads/. /app/data/uploads/ 2>/dev/null || true
+RUN chown -R nextjs:nodejs /app/data /app/public
+
+VOLUME ["/app/data/uploads"]
 
 USER nextjs
 

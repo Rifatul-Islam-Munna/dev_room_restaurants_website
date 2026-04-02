@@ -23,12 +23,19 @@ npm run dev
 MONGODB_URI =
 BASE_URL =
 JWT_SECRET =
+UPLOAD_DIR =
 
 ```
 
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+## Production Images
+
+Menu uploads are stored at runtime instead of relying on `public/uploads` being
+present in the repo. In Docker, mount `/app/data/uploads` to persistent
+storage so uploaded images survive container restarts and redeploys.
 
 ## Screenshots
 
